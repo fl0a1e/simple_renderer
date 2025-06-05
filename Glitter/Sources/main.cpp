@@ -11,6 +11,9 @@
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void Initimgui(GLFWwindow* window);
+void imguiTerminate();
+void imguiShowUI();
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
@@ -22,42 +25,31 @@ bool firstMouse = true;
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
+
+
 int main(int argc, char * argv[]) {
-
     // Load GLFW and Create a Window
-    Ember::LoadGLFW();
-    auto mWindow = glfwCreateWindow(mWidth, mHeight, "OpenGL", nullptr, nullptr);
-
-    // Check for Valid Context
-    if (mWindow == nullptr) {
-        fprintf(stderr, "Failed to Create OpenGL Context");
-        return EXIT_FAILURE;
-    }
-
+    auto mWindow = Ember::LoadGLFW(mWidth, mHeight, "OpenGL");
+    
     // Create Context and Load OpenGL Functions
-    glfwMakeContextCurrent(mWindow);
-    glfwSetFramebufferSizeCallback(mWindow, Ember::framebuffer_size_callback);
     glfwSetCursorPosCallback(mWindow, mouse_callback);
     glfwSetScrollCallback(mWindow, scroll_callback);
-    // tell GLFW to capture our mouse
-    glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    gladLoadGL();
-    fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
-
+    // imgui
+    Initimgui(mWindow);
+    
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
     stbi_set_flip_vertically_on_load(true);
-    // configure global opengl state
-    glEnable(GL_DEPTH_TEST);
+    
     // shader
     Ember::Shader shader;
-    shader.attach("vs.vert"); shader.attach("ps.frag");
-    shader.link();
-
+    shader.attach("vs.vert"); shader.attach("ps.frag"); shader.link();
+    // Model
     Ember::Model ourModel(PROJECT_SOURCE_DIR "/Glitter/Assets/Models/backpack/backpack.obj");
     
-    // draw in wireframe
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // configure global opengl state
+    glEnable(GL_DEPTH_TEST);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // draw in wireframe
 
     // Rendering Loop
     while (glfwWindowShouldClose(mWindow) == false) {
@@ -68,7 +60,13 @@ int main(int argc, char * argv[]) {
 
         // input
         Ember::processInput(mWindow, camera, deltaTime);
-
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        //ImGui::ShowDemoWindow(); // Show demo window! :)
+        imguiShowUI();
+        
         // ==== render ====
         // Background Fill Color
         glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
@@ -77,27 +75,24 @@ int main(int argc, char * argv[]) {
 
         shader.activate();
         // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)mWidth / (float)mHeight, 0.1f, 100.0f);
-        glm::mat4 view = camera.GetViewMatrix();
-        shader.bind("projection", projection);
-        shader.bind("view", view);
-
+        shader.bind("projection", camera.GetPerspectiveMatrix(mWidth, mHeight));
+        shader.bind("view", camera.GetViewMatrix());
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
         shader.bind("model", model);
         ourModel.Draw(shader);
-        
-		// glDrawArrays(GL_TRIANGLES, 0, 36); // drawcall
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        // glBindVertexArray(vao[1]);
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
-    }   glfwTerminate();
+    }   
+    imguiTerminate();
+    glfwTerminate();
     return EXIT_SUCCESS;
 }
 
@@ -112,6 +107,11 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 // -------------------------------------------------------
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse) {
+        // ImGui 正在使用鼠标，不传递给 GLFW/应用程序
+        return;
+    }
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
 
@@ -129,4 +129,33 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     lastY = ypos;
 
     camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+void Initimgui(GLFWwindow* window) {
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
+    ImGui_ImplOpenGL3_Init();
+}
+
+void imguiTerminate() {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+}
+
+void imguiShowUI() {
+	ImGui::Begin("Scene Info");
+    ImGui::SetWindowFontScale(1.5f);
+    ImGui::Text("frame(ms) - %.4f", deltaTime*1000.0f);
+    ImGui::Text("fps - %d", static_cast<int>(1.f / deltaTime));
+    ImGui::Text("XXX");
+    ImGui::End();
 }

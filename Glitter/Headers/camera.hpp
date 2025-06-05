@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
+#include <GLFW/glfw3.h>
 
 enum Camera_Movement {
 	FORWARD,
@@ -43,6 +43,7 @@ public:
 	Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
 
 	glm::mat4 GetViewMatrix() const;
+	glm::mat4 GetPerspectiveMatrix(const int width, const int height) const;
 
 	// process mouse input
 	void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true);

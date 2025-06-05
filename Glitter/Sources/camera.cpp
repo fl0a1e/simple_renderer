@@ -24,6 +24,10 @@ glm::mat4 Camera::GetViewMatrix() const {
 	return glm::lookAt(Position, Position + Front, Up);
 }
 
+glm::mat4 Camera::GetPerspectiveMatrix(const int width, const int height) const {
+	return glm::perspective(glm::radians(Zoom), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+}
+
 
 void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime) {
 	float velocity = MovementSpeed * deltaTime;

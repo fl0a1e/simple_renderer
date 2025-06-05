@@ -23,7 +23,7 @@ namespace Ember {
         
     void Model::Draw(Shader& shader) {
         for (Mesh& mesh : meshes) {
-            mesh.Draw(shader);
+            mesh.Draw(shader); // drawcall  = meshes.size()
         }
     }
         

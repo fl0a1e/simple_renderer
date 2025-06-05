@@ -1,13 +1,26 @@
 #include "utils.hpp"
 
 namespace Ember {
-    void LoadGLFW() {
+    GLFWwindow* LoadGLFW(const int mWidth, const int mHeight, const char* title) {
         glfwInit();
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
         glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+        auto mWindow = glfwCreateWindow(mWidth, mHeight, title, nullptr, nullptr);
+        // Check for Valid Context
+		assert(mWindow != nullptr && "Failed to Create OpenGL Context");
+
+        // Create Context and Load OpenGL Functions
+        glfwMakeContextCurrent(mWindow);
+        glfwSetFramebufferSizeCallback(mWindow, Ember::framebuffer_size_callback);
+        // tell GLFW to capture our mouse
+        glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+        gladLoadGL();
+        fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
+		return mWindow;
     }
 
 
@@ -37,7 +50,11 @@ namespace Ember {
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
             camera.ProcessKeyboard(RIGHT, deltaTime);
 
-        // ...
+        // GLFW_CURSOR
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 }
 
