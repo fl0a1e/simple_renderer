@@ -166,9 +166,10 @@ namespace Ember {
             }
         }
         return textures;
+
     }
 
-    unsigned int Model::TextureFromFile(const char* path, const std::string& directory)
+    unsigned int TextureFromFile(const char* path, const std::string& directory)
     {
         std::string filename = std::string(path);
         filename = directory + '/' + filename;

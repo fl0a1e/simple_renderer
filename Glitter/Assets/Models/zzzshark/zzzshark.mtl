@@ -1,0 +1,177 @@
+newmtl EllenFBXASC032Joe_meshSG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG1
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG2
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG3
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG4
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG5
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG6
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG7
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG8
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG9
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG10
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd face.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG11
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd body.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG12
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd body.tga
+Ni 1.00
+Ks 0.40 0.40 0.40
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG13
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd body.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG14
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd body.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG15
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd hair.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG16
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd hair.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG17
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd hair.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl EllenFBXASC032Joe_meshSG18
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd hair.tga
+Ni 1.00
+Ks 0.25 0.25 0.25
+Ns 50.22
+newmtl initialShadingGroup
+illum 4
+Kd 0.50 0.50 0.50
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00

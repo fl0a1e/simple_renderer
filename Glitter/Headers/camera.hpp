@@ -29,6 +29,8 @@ public:
 	glm::vec3 Up;
 	glm::vec3 Right;
 	glm::vec3 WorldUp;
+	float CamerNear;
+	float CamerFar;
 
 	// euler Angles£¬ÉãÏñ»ú²»¿¼ÂÇÐý×ª
 	float Pitch; // ¸©Ñö½Ç

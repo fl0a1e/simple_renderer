@@ -15,6 +15,8 @@ namespace Ember {
 
     void Shader::bind(unsigned int location, int value) { glUniform1i(location, value); }
     void Shader::bind(unsigned int location, float value) { glUniform1f(location, value); }
+    void Shader::bind(unsigned int location, glm::vec2 value) { glUniform2f(location, value.x, value.y); }
+    void Shader::bind(unsigned int location, glm::vec3 value) { glUniform3f(location, value.x, value.y, value.z); }
     void Shader::bind(unsigned int location, glm::vec4 value) { glUniform4f(location, value.x, value.y, value.z, value.w); }
     void Shader::bind(unsigned int location, glm::mat4 const& matrix) { glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix)); }
 

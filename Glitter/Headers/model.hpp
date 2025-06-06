@@ -25,6 +25,8 @@
 
 namespace Ember {
 
+    unsigned int TextureFromFile(const char* path, const std::string& directory);
+
     class Model {
     public:
         // Model Data
@@ -52,8 +54,6 @@ namespace Ember {
         // checks all material textures of a given type and loads the textures if they're not loaded yet.
         // the required info is returned as a Texture struct.
         std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
-
-        unsigned int TextureFromFile(const char* path, const std::string& directory);
         
     };
 

@@ -7,6 +7,8 @@ Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch) : Front
 	WorldUp = up;
 	Yaw = yaw;
 	Pitch = pitch;
+	CamerNear = 0.1f;
+	CamerFar = 100.f;
 	updateCameraVectors();
 }
 
@@ -17,6 +19,8 @@ Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float u
 	WorldUp = glm::vec3(upX, upY, upZ);
 	Yaw = yaw;
 	Pitch = pitch;
+	CamerNear = 0.1f;
+	CamerFar = 100.f;
 	updateCameraVectors();
 }
 
@@ -25,7 +29,7 @@ glm::mat4 Camera::GetViewMatrix() const {
 }
 
 glm::mat4 Camera::GetPerspectiveMatrix(const int width, const int height) const {
-	return glm::perspective(glm::radians(Zoom), static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+	return glm::perspective(glm::radians(Zoom), static_cast<float>(width) / static_cast<float>(height), CamerNear, CamerFar);
 }
 
 
