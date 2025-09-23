@@ -1,5 +1,7 @@
 # [Glitter](http://polytonic.github.io/Glitter/)
-![Screenshot](http://i.imgur.com/MDo2rsy.jpg)
+![Screenshot](./pictures/2025-09-23 21-11-53-30.png)
+
+![Screenshot](./pictures/2025-09-23 21-46-50-98.png)
 
 ## Summary
 
