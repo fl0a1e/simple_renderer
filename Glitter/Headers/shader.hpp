@@ -30,6 +30,7 @@ namespace Ember {
         void bind(unsigned int location, glm::vec2 value);
         void bind(unsigned int location, glm::vec3 value);
         void bind(unsigned int location, glm::vec4 value);
+        void bind(unsigned int location, glm::mat3 const& matrix);
         void bind(unsigned int location, glm::mat4 const& matrix);
         template<typename T> Shader& bind(std::string const& name, T&& value)
         {
