@@ -12,6 +12,7 @@
 // opengl state
 struct OpenGLState {
     bool PolygonMode = false;
+    bool BoxBlur = false;
 };
 
 
@@ -23,6 +24,7 @@ void imguiShowUI();
 void setOpenglState(const OpenGLState& s);
 void RenderQuad();
 void RenderCube();
+void renderSphere();
 
 
 Camera camera(glm::vec3(0.0f, 2.5f, 10.0f));
@@ -57,12 +59,16 @@ int main(int argc, char* argv[]) {
     Ember::Shader shaderGeometryPass;
     Ember::Shader shaderLightingPass;
     Ember::Shader shaderLightBox;
+    Ember::Shader postProcess;
+    Ember::Shader PBRShader;
     Ember::Shader debugshader;
     //shader.attach("vs.vert"); shader.attach("ps.frag"); shader.link();
     //showDepthShader.attach("vs.vert"); showDepthShader.attach("depth.frag"); showDepthShader.link();
     shaderGeometryPass.attach("g_buffer.vert"); shaderGeometryPass.attach("g_buffer.frag"); shaderGeometryPass.link();
     shaderLightingPass.attach("deferred_shading.vert"); shaderLightingPass.attach("deferred_shading.frag"); shaderLightingPass.link();
     shaderLightBox.attach("light_cube.vert"); shaderLightBox.attach("light_cube.frag"); shaderLightBox.link();
+	postProcess.attach("post_process.comp"); postProcess.link();
+	PBRShader.attach("pbr.vert"); PBRShader.attach("pbr.frag"); PBRShader.link();
     debugshader.attach("debug_pos.vert"); debugshader.attach("debug_pos.frag"); debugshader.link();
 
     // Set samplers
@@ -108,7 +114,7 @@ int main(int argc, char* argv[]) {
     };
 
     // 创建UBO并绑定到绑定点0
-    const GLuint NR_LIGHTS = 800;
+    const GLuint NR_LIGHTS = 20;
     GLuint lightUBO;
     glGenBuffers(1, &lightUBO);
     glBindBuffer(GL_UNIFORM_BUFFER, lightUBO);
@@ -166,6 +172,7 @@ int main(int argc, char* argv[]) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoSpec, 0);
     // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
+    // 有多个color附件，需要通知opengl，不然只写ATTACHMENT0
     GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
     glDrawBuffers(3, attachments);
     // create and attach depth buffer (renderbuffer)
@@ -179,6 +186,31 @@ int main(int argc, char* argv[]) {
         std::cout << "Framebuffer not complete!" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// Lighting Pass FBO，输出暂存到texture，input computer shader for post process
+    GLuint lightingFBO;
+	glGenFramebuffers(1, &lightingFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
+    GLuint lightingTex;
+	glGenTextures(1, &lightingTex);
+	glBindTexture(GL_TEXTURE_2D, lightingTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, mWidth, mHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightingTex, 0);
+    // 检查完整性
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Lighting FBO not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    
+	// compute shader for post process
+    GLuint postProcessTex;
+    glGenTextures(1, &postProcessTex);
+    glBindTexture(GL_TEXTURE_2D, postProcessTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, mWidth, mHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -222,6 +254,7 @@ int main(int argc, char* argv[]) {
 
         // 2. Lighting Pass: calculate lighting by iterating over a screen filled quad pixel-by-pixel using the gbuffer's content.
         // render to screen quad
+        glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         shaderLightingPass.activate();
@@ -244,39 +277,35 @@ int main(int argc, char* argv[]) {
             shaderLightingPass.bind("lights[" + std::to_string(i) + "].Quadratic", quadratic);
         }
         shaderLightingPass.bind("viewPos", camera.Position);
-		// 渲染到屏幕四边形
-        RenderQuad();
+        RenderQuad(); // 渲染到lightingTex
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		// 一样的道理，如果要单独显示某个gbuffer的纹理，可以用下面的代码
-        {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            shaderLightingPass.activate();
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, gPosition);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, gNormal);
-            glActiveTexture(GL_TEXTURE2);
-            glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
 
-            // send light relevant uniforms
-            for (GLuint i = 0; i < lightPositions.size(); i++) {
-                shaderLightingPass.bind("lights[" + std::to_string(i) + "].Position", lights[i].Position);
-                shaderLightingPass.bind("lights[" + std::to_string(i) + "].Color", lights[i].Color);
-                // Update attenuation parameters and calculate radius
-                const GLfloat constant = 1.0; // Note that we don't send this to the shader, we assume it is always 1.0 (in our case)
-                const GLfloat linear = 0.7;
-                const GLfloat quadratic = 1.8;
-                shaderLightingPass.bind("lights[" + std::to_string(i) + "].Linear", linear);
-                shaderLightingPass.bind("lights[" + std::to_string(i) + "].Quadratic", quadratic);
-            }
-            shaderLightingPass.bind("viewPos", camera.Position);
-            // 渲染到四边形
-            RenderQuad();
-        }
+		// post process pass
+        if (openglstate.BoxBlur) {
+            glBindImageTexture(0, lightingTex, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+            glBindImageTexture(1, postProcessTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+            postProcess.activate();
+            // 调度线程：确保覆盖整个屏幕
+            glDispatchCompute(
+                (mWidth + 15) / 16,    // work groups X
+                (mHeight + 15) / 16,   // work groups Y
+                1                      // work groups Z
+            );
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT); // 内存屏障，保证写入完成再被采样
+            // RenderQuad(); // computer shader不需要调用绘制，又是一个坑
+        } else {
+            postProcessTex = lightingTex; // 直接用lighting结果
+		}
+
+		// final pass: render to screen
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        debugshader.activate();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, postProcessTex);
+        RenderQuad(); // 渲染到屏幕四边形
 
         // === 前向渲染pass，正向渲染所有光立方体 ===
-		
         // 小心处理depth, 否则会被覆盖
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
@@ -290,15 +319,54 @@ int main(int argc, char* argv[]) {
         shaderLightBox.bind("view", camera.GetViewMatrix());
         for (GLuint i = 0; i < NR_LIGHTS; i++)
         {
-            glm::mat4 model = glm::mat4(1.0f);
+            glm::mat4 model = glm::mat4(1.f);
             model = glm::translate(model, lights[i].Position);
             model = glm::scale(model, glm::vec3(.25f));
             shaderLightBox.bind("model", model);
             shaderLightBox.bind("lightColor", lights[i].Color);
-            RenderCube();
+            renderSphere();
         }
 
-        // debug
+
+        //// PBR
+        // PBR lights uniform
+        PBRShader.activate();
+        PBRShader.bind("projection", camera.GetPerspectiveMatrix(mWidth, mHeight));
+        PBRShader.bind("view", camera.GetViewMatrix());
+        for (GLuint i = 0; i < NR_LIGHTS; i++)
+        {
+            PBRShader.bind("lightPositions[" + std::to_string(i) + "]", lights[i].Position);
+            PBRShader.bind("lightColors[" + std::to_string(i) + "]", lights[i].Color);
+        }
+        int nrRows = 7;
+        int nrColumns = 7;
+		PBRShader.bind("projection", camera.GetPerspectiveMatrix(mWidth, mHeight));
+		PBRShader.bind("view", camera.GetViewMatrix());
+        PBRShader.bind("camPos", camera.Position);
+        PBRShader.bind("albedo", glm::vec3(0.5f, 0.0f, 0.0f));
+        PBRShader.bind("ao", 1.0f);
+        // render rows*column number of spheres with varying metallic/roughness values scaled by rows and columns respectively
+        glm::mat4 model = glm::mat4(1.f);
+        for (int row = 0; row < nrRows; ++row) {
+			PBRShader.bind("metallic", (float)row / (float)nrRows);
+            for (int col = 0; col < nrColumns; ++col) {
+                // we clamp the roughness to 0.05 - 1.0 as perfectly smooth surfaces (roughness of 0.0) tend to look a bit off
+                // on direct lighting.
+				PBRShader.bind("roughness", glm::clamp((float)col / (float)nrColumns, 0.05f, 1.0f));
+                model = glm::mat4(1.f);
+                model = glm::scale(model, glm::vec3(0.5f));
+                model = glm::translate(model, glm::vec3(
+                    (col - (nrColumns / 2)) * 2.5f,
+                    (row - (nrRows / 2)) * 2.5f,
+                    -2.0f
+                ));
+                PBRShader.bind("model", model);
+                PBRShader.bind("normalMatrix", glm::transpose(glm::inverse(glm::mat3(model))));
+				renderSphere();
+            }
+        }
+
+        // debug-gBuffer
         glDisable(GL_DEPTH_TEST);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         debugshader.activate();
@@ -434,6 +502,103 @@ void RenderCube()
     glBindVertexArray(0);
 }
 
+// renders (and builds at first invocation) a sphere
+// -------------------------------------------------
+unsigned int sphereVAO = 0;
+unsigned int indexCount;
+void renderSphere()
+{
+    if (sphereVAO == 0)
+    {
+        glGenVertexArrays(1, &sphereVAO);
+
+        unsigned int vbo, ebo;
+        glGenBuffers(1, &vbo);
+        glGenBuffers(1, &ebo);
+
+        std::vector<glm::vec3> positions;
+        std::vector<glm::vec2> uv;
+        std::vector<glm::vec3> normals;
+        std::vector<unsigned int> indices;
+
+        const unsigned int X_SEGMENTS = 64;
+        const unsigned int Y_SEGMENTS = 64;
+        const float PI = 3.14159265359f;
+        for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+        {
+            for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+            {
+                float xSegment = (float)x / (float)X_SEGMENTS;
+                float ySegment = (float)y / (float)Y_SEGMENTS;
+                float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+                float yPos = std::cos(ySegment * PI);
+                float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+                positions.push_back(glm::vec3(xPos, yPos, zPos));
+                uv.push_back(glm::vec2(xSegment, ySegment));
+                normals.push_back(glm::vec3(xPos, yPos, zPos));
+            }
+        }
+
+        bool oddRow = false;
+        for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
+        {
+            if (!oddRow) // even rows: y == 0, y == 2; and so on
+            {
+                for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+                {
+                    indices.push_back(y * (X_SEGMENTS + 1) + x);
+                    indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+                }
+            }
+            else
+            {
+                for (int x = X_SEGMENTS; x >= 0; --x)
+                {
+                    indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+                    indices.push_back(y * (X_SEGMENTS + 1) + x);
+                }
+            }
+            oddRow = !oddRow;
+        }
+        indexCount = static_cast<unsigned int>(indices.size());
+
+        std::vector<float> data;
+        for (unsigned int i = 0; i < positions.size(); ++i)
+        {
+            data.push_back(positions[i].x);
+            data.push_back(positions[i].y);
+            data.push_back(positions[i].z);
+            if (normals.size() > 0)
+            {
+                data.push_back(normals[i].x);
+                data.push_back(normals[i].y);
+                data.push_back(normals[i].z);
+            }
+            if (uv.size() > 0)
+            {
+                data.push_back(uv[i].x);
+                data.push_back(uv[i].y);
+            }
+        }
+        glBindVertexArray(sphereVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+        unsigned int stride = (3 + 2 + 3) * sizeof(float);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(float)));
+    }
+
+    glBindVertexArray(sphereVAO);
+    glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
+}
+
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
@@ -493,6 +658,7 @@ void imguiShowUI() {
     ImGui::Text("fps - %d", static_cast<int>(1.f / deltaTime));
     ImGui::Text("viewPos - (%.2f, %.2f, %.2f)", static_cast<float>(camera.Position.x), static_cast<float>(camera.Position.y), static_cast<float>(camera.Position.z));
     ImGui::Checkbox("glPolygonMode", &(openglstate.PolygonMode));
+    ImGui::Checkbox("Opposite Color", &(openglstate.BoxBlur));
     ImGui::End();
 }
 

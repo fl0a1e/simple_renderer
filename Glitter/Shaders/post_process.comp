@@ -1,0 +1,35 @@
+#version 430 core
+
+// 定义工作组内每个维度的线程数 (work group size)
+layout (local_size_x = 16, local_size_y = 16) in;
+
+// 输入纹理 (只读)
+layout (binding = 0, rgba16f) uniform readonly image2D inputImage;
+
+// 输出纹理 (可写)
+layout (binding = 1, rgba16f) uniform writeonly image2D outputImage;
+
+void main() {
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy); // 当前全局像素坐标
+    // vec4 color = imageLoad(inputImage, pixel);  // 从输入纹理读取
+    ivec2 imgSize = imageSize(inputImage); // 获取图像尺寸
+
+    vec3 sum = vec3(0.0);
+    int count = 0;
+
+    // 3x3 邻域
+    for (int y = -1; y <= 1; ++y) {
+        for (int x = -1; x <= 1; ++x) {
+            ivec2 offset = pixel + ivec2(x, y);
+            // 边界检查
+            if (offset.x >= 0 && offset.y >= 0 && offset.x < imgSize.x && offset.y < imgSize.y) {
+                vec4 neighbor = imageLoad(inputImage, offset);
+                sum += neighbor.rgb;
+                count += 1;
+            }
+        }
+    }
+
+    vec3 blurred = sum / float(count);
+    imageStore(outputImage, pixel, vec4(blurred, 1.0));
+}

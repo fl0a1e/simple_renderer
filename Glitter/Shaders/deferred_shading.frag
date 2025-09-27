@@ -18,7 +18,7 @@ struct Light {
     vec2 padding2;   // 填充以满足16字节对齐
 };
 
-const int NR_LIGHTS = 800;
+const int NR_LIGHTS = 20;
 // 使用UBO存储光源数组 (std140布局确保跨平台对齐一致)
 layout(std140, binding = 0) uniform LightBuffer {
     Light lights[NR_LIGHTS];  // 现在可以支持更多个光源
